@@ -8,19 +8,6 @@ class Node:
         self.rightLabel = rlabel
         self.children = {'left': lchild, 'right': rchild}
 
-    def printNode(self, depth):
-        depth+=1
-        if self.featureIndex != -1:
-            if self.children['left'] != 0:
-                # print("Left: ")
-                # print(self.children['left'].featureIndex)
-                self.children['left'].printNode(depth)
-            if self.children['right'] != 0:
-                # print("Right:")
-                # print(self.children['right'].featureIndex)
-                self.children['right'].printNode(depth)
-
-
 class TrainBinary:
 
     def __init__(self):
@@ -140,13 +127,46 @@ def DT_train_binary(X, Y, max_depth):
     return trainer.recursive_train_binary(available_samples, available_features, max_depth)
 
 
+def test_binary_helper(samples, labels, node, all_samples):
+
+    left_samples = numpy.array([])
+    right_samples = numpy.array([])
+    left_correct = 0
+    right_correct = 0
+
+    for sample in samples:
+        if all_samples[int(sample)][int(node.featureIndex)] == 0:
+            left_samples = numpy.append(left_samples, sample)
+        else:
+            right_samples = numpy.append(right_samples, sample)
+
+    print(left_samples)
+    print(right_samples)
+    if node.children['left'] != 0:
+        left_correct = test_binary_helper(left_samples, labels, node.children['left'], all_samples)
+    else:
+        for sample in left_samples:
+            if labels[int(sample)] == node.leftLabel:
+                left_correct += 1
+
+    if node.children['right'] != 0:
+        right_correct = test_binary_helper(right_samples, labels, node.children['right'], all_samples)
+    else:
+        for sample in right_samples:
+            if labels[int(sample)] == node.rightLabel:
+                right_correct += 1
+    return right_correct + left_correct
+
+
 def DT_test_binary(X, Y, DT):
-    print("I am test binary")
+    all_samples = numpy.arange(0, len(X))
+    number_correct = test_binary_helper(all_samples, Y, tree, X)
+    return number_correct/len(Y)
 
 
 if __name__ == "__main__":
     x = numpy.array([[0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 1, 1], [1, 1, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1], [0, 1, 0, 1], [0, 1, 0, 0]])
     y = numpy.array([[0], [1], [0], [0], [1], [0], [1], [1], [1]])
     tree = DT_train_binary(x, y, 5)
-    print(tree.featureIndex)
-    tree.printNode(0)
+    print(DT_test_binary(x, y, tree))
+
