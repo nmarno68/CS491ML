@@ -8,14 +8,17 @@ class Node:
         self.rightLabel = rlabel
         self.children = {'left': lchild, 'right': rchild}
 
-    def printNode(self):
+    def printNode(self, depth):
+        depth+=1
         if self.featureIndex != -1:
             if self.children['left'] != 0:
-                print(self.children['left'].featureIndex)
-                self.children['left'].printNode()
+                # print("Left: ")
+                # print(self.children['left'].featureIndex)
+                self.children['left'].printNode(depth)
             if self.children['right'] != 0:
-                print(self.children['right'].featureIndex)
-                self.children['right'].printNode()
+                # print("Right:")
+                # print(self.children['right'].featureIndex)
+                self.children['right'].printNode(depth)
 
 
 class TrainBinary:
@@ -35,14 +38,14 @@ class TrainBinary:
 
         if depth != 0 and len(features) != 0:
             total_samples = len(samples)
-            left_samples = numpy.array([])
-            right_samples = numpy.array([])
             feature_data = {'information_gain': 0}
             set_entropy = 0
 
             for feature in features:
                 feature_true_label_true = 0
                 feature_false_label_true = 0
+                left_samples = numpy.array([])
+                right_samples = numpy.array([])
                 # Looking at feature for each sample, collect data
                 for sample in samples:
 
@@ -75,6 +78,8 @@ class TrainBinary:
                     p_label_true = feature_true_label_true / len(right_samples)
                     p_label_false = 1 - p_label_true
 
+                    # DO NOT FREAK OUT IF LABELS ON BOTH SIDES ARE SAME THIS IS MY BIAS RIGHT HERE ITS FINE THERE
+                    # WAS JUST A 50/50 SPLIT
                     label_right = 1 if p_label_true > .5 else 0
 
                     entropy_right = self.entropy(p_label_true) + self.entropy(p_label_false)
@@ -106,10 +111,14 @@ class TrainBinary:
                 # Create new tree node and call function on left and right samples if we haven't hit max IG
                 if feature_data['information_gain'] != set_entropy:
                     # index, llabel, rlabel, lchild, rchild
+                    print("Best choice keep going:")
+                    print(feature_data)
                     return Node(feature_data['feature_index'], feature_data['label_left'], feature_data['label_right'],
                                 self.recursive_train_binary(feature_data['left_samples'], features, depth - 1),
                                 self.recursive_train_binary(feature_data['right_samples'], features, depth - 1))
                 else:
+                    print("Best choice we're done:")
+                    print(feature_data)
                     return Node(feature_data['feature_index'], feature_data['label_left'], feature_data['label_right'],
                                 0, 0)
             else:
@@ -138,6 +147,6 @@ def DT_test_binary(X, Y, DT):
 if __name__ == "__main__":
     x = numpy.array([[0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 1, 1], [1, 1, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1], [0, 1, 0, 1], [0, 1, 0, 0]])
     y = numpy.array([[0], [1], [0], [0], [1], [0], [1], [1], [1]])
-    tree = DT_train_binary(x, y, -1)
+    tree = DT_train_binary(x, y, 5)
     print(tree.featureIndex)
-    tree.printNode()
+    tree.printNode(0)
