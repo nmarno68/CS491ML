@@ -8,6 +8,17 @@ class Node:
         self.rightLabel = rlabel
         self.children = {'left': lchild, 'right': rchild}
 
+    def height(self):
+
+        if self.children['left'] == 0 and self.children['right'] == 0:
+            return 1
+        if self.children['left'] == 0:
+            return self.children['right'].height() + 1
+        if self.children['right'] == 0:
+            return self.children['left'].height() + 1
+        return max(self.children['left'].height(), self.children['right'].height()) + 1
+
+
 class TrainBinary:
 
     def __init__(self):
@@ -98,23 +109,23 @@ class TrainBinary:
                 # Create new tree node and call function on left and right samples if we haven't hit max IG
                 if feature_data['information_gain'] != set_entropy:
                     # index, llabel, rlabel, lchild, rchild
-                    print("Best choice keep going:")
-                    print(feature_data)
+                    # print("Best choice keep going:")
+                    # print(feature_data)
                     return Node(feature_data['feature_index'], feature_data['label_left'], feature_data['label_right'],
                                 self.recursive_train_binary(feature_data['left_samples'], features, depth - 1),
                                 self.recursive_train_binary(feature_data['right_samples'], features, depth - 1))
                 else:
-                    print("Best choice we're done:")
-                    print(feature_data)
+                    # print("Best choice we're done:")
+                    # print(feature_data)
                     return Node(feature_data['feature_index'], feature_data['label_left'], feature_data['label_right'],
                                 0, 0)
             else:
                 # No feature to split on (None of the features improve entropy ~ IG = 0)
-                return Node(-1, 0, 0, 0, 0)
+                return 0
 
         else:
             # No feature to split on (max depth reached or no more features)
-            return Node(-1, 0, 0, 0, 0)
+            return 0
 
 
 def DT_train_binary(X, Y, max_depth):
@@ -128,7 +139,6 @@ def DT_train_binary(X, Y, max_depth):
 
 
 def test_binary_helper(samples, labels, node, all_samples):
-
     left_samples = numpy.array([])
     right_samples = numpy.array([])
     left_correct = 0
@@ -140,8 +150,6 @@ def test_binary_helper(samples, labels, node, all_samples):
         else:
             right_samples = numpy.append(right_samples, sample)
 
-    print(left_samples)
-    print(right_samples)
     if node.children['left'] != 0:
         left_correct = test_binary_helper(left_samples, labels, node.children['left'], all_samples)
     else:
@@ -160,13 +168,33 @@ def test_binary_helper(samples, labels, node, all_samples):
 
 def DT_test_binary(X, Y, DT):
     all_samples = numpy.arange(0, len(X))
-    number_correct = test_binary_helper(all_samples, Y, tree, X)
-    return number_correct/len(Y)
+    number_correct = test_binary_helper(all_samples, Y, DT, X)
+    return number_correct / len(Y)
+
+
+def DT_train_binary_best(X_train, Y_train, X_val, Y_val):
+    i = 2
+    forest = numpy.array([])
+    forest = numpy.append(forest, DT_train_binary(X_train, Y_train, 1))
+    forest = numpy.append(forest, DT_train_binary(X_train, Y_train, 2))
+
+    while forest[len(forest) - 1].height() != forest[len(forest) - 2].height():
+        forest = numpy.append(forest, DT_train_binary(X_train, Y_train, i))
+        i += 1
+
+    accuracy = numpy.array([])
+    for trees in forest:
+        accuracy = numpy.append(accuracy, DT_test_binary(X_val, Y_val, trees))
+
+    return forest[numpy.argmax(accuracy)]
 
 
 if __name__ == "__main__":
-    x = numpy.array([[0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 1, 1], [1, 1, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1], [0, 1, 0, 1], [0, 1, 0, 0]])
+    x = numpy.array(
+        [[0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 1, 1], [1, 1, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1], [0, 1, 0, 1],
+         [0, 1, 0, 0]])
     y = numpy.array([[0], [1], [0], [0], [1], [0], [1], [1], [1]])
-    tree = DT_train_binary(x, y, 5)
-    print(DT_test_binary(x, y, tree))
-
+    x_val = numpy.array([[1, 0, 0, 0], [0, 0, 1, 1], [1, 1, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1], [0, 1, 0, 0]])
+    y_val = numpy.array([[0], [0], [1], [0], [1], [1]])
+    tree = DT_train_binary_best(x, y, x_val, y_val)
+    print(DT_test_binary(x_val, y_val, tree))
