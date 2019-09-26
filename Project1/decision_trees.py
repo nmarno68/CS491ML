@@ -9,7 +9,7 @@ class Node:
         self.leftLabel = llabel
         self.rightLabel = rlabel
         self.children = {'left': lchild, 'right': rchild}
-        self.featureValue = 0
+        self.featureValue = feature_value
 
     def height(self):
 
@@ -352,15 +352,16 @@ def test_real_helper(samples, labels, node, all_samples):
         left_correct = test_real_helper(left_samples, labels, node.children['left'], all_samples)
     else:
         for sample in left_samples:
-            if labels[int(sample)] == node.leftLabel:
+            if labels[int(sample)][0] == node.leftLabel:
                 left_correct += 1
 
     if node.children['right'] != 0:
         right_correct = test_real_helper(right_samples, labels, node.children['right'], all_samples)
     else:
         for sample in right_samples:
-            if labels[int(sample)] == node.rightLabel:
+            if labels[int(sample)][0] == node.rightLabel:
                 right_correct += 1
+
     return right_correct + left_correct
 
 
@@ -379,3 +380,4 @@ def DT_train_real_best(X_train, Y_train, X_val, Y_val):
         accuracy = numpy.append(accuracy, DT_test_real(X_val, Y_val, trees))
 
     return forest[numpy.argmax(accuracy)]
+
